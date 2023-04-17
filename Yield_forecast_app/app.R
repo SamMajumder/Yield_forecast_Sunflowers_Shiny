@@ -33,7 +33,10 @@ Future_predictions <- Future_predictions %>%
                                                   left = TRUE)
       
 
-Variable_Imp <- readRDS("Var_IMP_total.RDS")
+Variable_Imp <- readRDS("Var_IMP_total.RDS") 
+
+ALE <- readRDS("ALE.RDS") %>% 
+               rename(Model_Type=`Model Type`)
 
 
 ############## 
@@ -77,7 +80,34 @@ ui <-  fluidPage(
                                 choices = NULL))
              ),
              plotlyOutput("Future_Predictions_map")
-            )
+            ),
+    
+    tabPanel(title = "Important factors",
+             fluidRow(
+               column(width=6,
+                      selectInput("Dataset",
+                                  "Dataset",
+                                  choices = unique(Variable_Imp$Dataset))),
+               column(width = 6,
+                      selectInput("Model_Type",
+                                  "Model_Type",
+                                  choices = NULL))
+             ),
+             plotlyOutput("Variable_Importance")
+            ),
+    tabPanel(title = "Historical trends",
+             fluidRow(
+               column(width = 6,
+                      selectInput("Model_Type",
+                                  "ModelType",
+                                  choices = unique(ALE$Model_Type))),
+               column(width = 6,
+                      selectInput("Feature",
+                                  "Feature",
+                                  choices = NULL))
+             ),
+             plotlyOutput("ALE_plots"))
+    
        )
   )
 
@@ -124,7 +154,87 @@ server <- function(input, output, session) {
     
       ggplotly(p1)
                               
-  })  
+  })   
+  
+  
+  #### Hierarchichal dropdowns for Dataset #### 
+  
+  Model_choices <- reactive({
+    
+    Variable_Imp %>% 
+      filter(Dataset == input$Dataset) %>% 
+      pull(Model_Type)
+  })
+  
+  ### update the Dataset dropdown based on model ###
+  
+  observe({
+    updateSelectInput(session, "Model_Type",
+                      choices = Model_choices())
+  })
+  
+  output$Variable_Importance <- renderPlotly({
+    
+    p2 <- Variable_Imp %>% 
+      filter(Dataset == input$Dataset,
+             Model_Type == input$Model_Type) %>% 
+      ggplot(aes(x=reorder(Features,Overall), 
+                 y = Overall, 
+                 fill = `Variable Type`)) + 
+      geom_bar(stat = "identity") + 
+      scale_fill_manual(values = c("#E31A1C", "#A6CEE3",
+                                   "#FDBF6F", "#B2DF8A",
+                                   "#FF7F00")) +
+      labs(x= "Factors", y= "Variable Importance(mean decrease of RMSE)") +
+      coord_flip() + 
+      theme_bw() +
+      theme(text = element_text(size = 10))  
+    
+    ggplotly(p2)
+    
+  }) 
+  
+  ##### Hierarchichal dropdowns for ALE plots ### 
+  
+  ### Hierarchichal dropdowns for Variables ##
+  
+  Feature_choices <- reactive({
+    
+    ALE %>% 
+      filter(Model_Type == input$Model_Type) %>%
+      pull(Feature)
+  })
+  
+  ### update the state dropdown based on dataset ###
+  
+  observe({
+    updateSelectInput(session, "Feature",
+                      choices = Feature_choices())
+  }) 
+  
+  ### THE ALE PLOT ###
+  
+  output$ALE_plots <- renderPlotly({
+    
+    p3 <- ALE %>% 
+      filter(Model_Type == input$Model_Type,
+             Feature == input$Feature) %>% 
+      ggplot(aes(x = Variable_values,
+                 y = ALE)) + 
+      geom_line(aes(color = Feature)) + 
+      facet_wrap(~Dataset) +
+      labs(x = "Trait Value",
+           y = "Accumulated Local Effects") +
+      theme(text = element_text(size=10)) +
+      theme(legend.position = "None")
+    
+    ggplotly(p3)
+    
+  })
+  
+  
+  
+  
 
 }
 
