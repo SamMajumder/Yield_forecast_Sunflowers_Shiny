@@ -52,10 +52,9 @@ ui <-  fluidPage(
                scenarios and three machine learning algorithms. 
                
                The Future Predictions tab displays choropleth maps of predicted 
-               yields, while the Important Factors tab highlights key factors that 
-               drive yield for each state. The app includes state-level models, 
-               which outperformed the global model for some states. Error estimates 
-               are also provided for each county. Data was sourced from USDA and NOAA.
+               yields. The app includes state-level models, which outperformed 
+               the national model for some states. Error estimates are also 
+               provided for each county. Data was sourced from USDA and NOAA.
                
                This app was developed by Sambadi Majumder, a PhD student at the
                University of Central Florida as of April 16th 2023. If you have
@@ -78,21 +77,7 @@ ui <-  fluidPage(
                                 choices = NULL))
              ),
              plotlyOutput("Future_Predictions_map")
-            ),
-    tabPanel(title = "Important factors",
-             fluidRow(
-               column(width=6,
-                      selectInput("Dataset",
-                                  "Dataset",
-                                  choices = unique(Variable_Imp$Dataset))),
-               column(width = 6,
-                      selectInput("Model_Type",
-                                  "Model_Type",
-                                  choices = NULL))
-             ),
-             plotlyOutput("Variable_Importance")
-             
-           )
+            )
        )
   )
 
@@ -140,43 +125,6 @@ server <- function(input, output, session) {
       ggplotly(p1)
                               
   })  
-  
-  #### Hierarchichal dropdowns for Dataset #### 
-  
-  Model_choices <- reactive({
-    
-    Variable_Imp %>% 
-      filter(Dataset == input$Dataset) %>% 
-      pull(Model_Type)
-  })
-  
-  ### update the Dataset dropdown based on model ###
-  
-  observe({
-    updateSelectInput(session, "Model_Type",
-                      choices = Model_choices())
-  })
-  
-  output$Variable_Importance <- renderPlotly({
-    
-    p2 <- Variable_Imp %>% 
-      filter(Dataset == input$Dataset,
-             Model_Type == input$Model_Type) %>% 
-      ggplot(aes(x=reorder(Features,Overall), 
-                 y = Overall, 
-                 fill = `Variable Type`)) + 
-      geom_bar(stat = "identity") + 
-      scale_fill_manual(values = c("#E31A1C", "#A6CEE3",
-                                   "#FDBF6F", "#B2DF8A",
-                                   "#FF7F00")) +
-      labs(x= "Factors", y= "Variable Importance(mean decrease of RMSE)") +
-      coord_flip() + 
-      theme_bw() +
-      theme(text = element_text(size = 10))  
-    
-    ggplotly(p2)
-    
-  }) 
 
 }
 
