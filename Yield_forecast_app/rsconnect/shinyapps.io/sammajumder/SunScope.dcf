@@ -1,0 +1,14 @@
+name: SunScope
+title: SunScope
+username:
+account: sammajumder
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8869685
+bundleId: 7097967
+url: https://sammajumder.shinyapps.io/SunScope/
+when: 1681704685.92424
+lastSyncTime: 1681704685.92427
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: app - Copy.R|test.R
