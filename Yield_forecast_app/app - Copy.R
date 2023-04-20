@@ -15,11 +15,25 @@ library(plotly)
 library(sf)
 library(bslib)
 
+rm(list = ls())
+
 ##### Loading in the datasets ####
 
-Errors <- readRDS("Errors.RDS")
+Errors <- readRDS("Errors.RDS") %>% st_drop_geometry()
 
-Future_predictions <- readRDS("Future_predictions.RDS")
+Errors_test <- Errors %>% 
+  filter(Dataset == "Test") %>% select(Longitude,Latitude,Error,FIPS)
+
+
+Future_predictions <- readRDS("Future_predictions.RDS") %>% 
+                                                      st_drop_geometry() %>% 
+                                                      rename(Longitude = LON,
+                                                             Latitude = LAT)
+
+inner_join(Future_predictions,Errors_test,
+           by = "FIPS")
+
+
 
 Variable_Imp <- readRDS("Var_IMP_total.RDS")
 
