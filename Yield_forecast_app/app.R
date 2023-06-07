@@ -15,6 +15,7 @@ library(plotly)
 library(sf)
 library(bslib)
 
+
 ##### Loading in the datasets ####
 
 Future_predictions <- readRDS("Future_predictions.RDS") %>% 
@@ -125,7 +126,7 @@ server <- function(input, output, session) {
                              filter(State == input$State,
                              Timeframe == input$Timeframe) %>% 
       ggplot(aes(fill=Predictions,
-                 text = str_c(County, " Avg Error: ", Mean_Error))) +
+                 text = str_c(County, " Avg Error: ", Average_Error))) +
       geom_sf(colour = NA)  +
       facet_wrap(~RCP) +
       scale_fill_viridis("Yield predictions (LBs/Acre)",
@@ -166,7 +167,7 @@ server <- function(input, output, session) {
                  y = ALE)) + 
       geom_line(aes(color = Feature)) + 
       facet_wrap(~Dataset) +
-      labs(x = "Factor Value",
+      labs(x = "Predictor Value",
            y = "Accumulated Local Effects") +
       theme(text = element_text(size=10)) +
       theme(legend.position = "None")
