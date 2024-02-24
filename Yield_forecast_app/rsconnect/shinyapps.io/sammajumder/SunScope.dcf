@@ -5,10 +5,8 @@ account: sammajumder
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 8869685
-bundleId: 7281821
+bundleId: 8291824
 url: https://sammajumder.shinyapps.io/SunScope/
-when: 1685455914.06414
-lastSyncTime: 1685455914.06415
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|app - Copy.R|test.R
+ignoredFiles: app - Copy.R|test.R

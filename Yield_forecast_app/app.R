@@ -1,11 +1,4 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+
 
 library(shiny)
 library(tidyverse)
@@ -14,6 +7,7 @@ library(viridis)
 library(plotly)
 library(sf)
 library(bslib)
+library(leaflet)
 
 
 ##### Loading in the datasets ####
@@ -21,6 +15,10 @@ library(bslib)
 Future_predictions <- readRDS("Future_predictions.RDS") %>% 
                                            rename(Longitude = LON,
                                                   Latitude = LAT)
+
+# Transform the CRS to EPSG:4326
+Future_predictions <- st_transform(Future_predictions, crs = 4326)
+
 
 ALE <- readRDS("ALE.RDS") %>% 
                          rename(Model_Type=`Model Type`)
@@ -64,17 +62,21 @@ ui <-  fluidPage(
     
     tabPanel(title = "Future Predictions",
              fluidRow(
-             column(width = 6,
-               selectInput("State",
-                         "State",
-                         choices = unique(Future_predictions$State))),
-             column(width = 6,
-                    selectInput("Timeframe",
-                                "Timeframe",
-                                choices = NULL))
+               column(width = 6,
+                      selectInput("State",
+                                  "State",
+                                  choices = unique(Future_predictions$State))),
+               column(width = 6,
+                      selectInput("Timeframe",
+                                  "Timeframe",
+                                  choices = NULL)),
+               column(width = 4,
+                      selectInput("RCP",
+                                  "RCP",
+                                  choices = NULL))
              ),
-             plotlyOutput("Future_Predictions_map")
-            ), 
+             leafletOutput("Future_Predictions_map") # Changed this line
+    ),  
     
     tabPanel(title = "Historical trends",
              fluidRow(
@@ -102,13 +104,10 @@ server <- function(input, output, session) {
   
   ###### Hierarchical dropdowns for future predictions ###
   
-  ## Hierarchical drop downs for Timeframe 
   
-  Timeframe_choices <- reactive({
-    
-    Future_predictions %>% 
-      filter(State == input$State) %>% 
-      pull(Timeframe)
+  ## Reactive expression for RCP choices
+  RCP_choices <- reactive({
+    unique(Future_predictions$RCP[Future_predictions$State == input$State])
   })
   
   ### Update Timeframe dropdown based on selected State ###
@@ -116,24 +115,73 @@ server <- function(input, output, session) {
   observe({
     updateSelectInput(session, "Timeframe",
                       choices = Timeframe_choices())
-  }) 
+  })  
+  
+  ## Update RCP dropdown based on selected State
+  observe({
+    updateSelectInput(session, "RCP",
+                      choices = RCP_choices())
+  })
+  
+  
+  ## Hierarchical drop downs for Timeframe - Now also reactive to RCP choice
+  Timeframe_choices <- reactive({
+    Future_predictions %>% 
+      filter(State == input$State, RCP == input$RCP) %>% 
+      pull(Timeframe)
+  })
   
   ### Map showing future predictions across 4 RCPs ##
   
-  output$Future_Predictions_map <- renderPlotly({
+  ### Map showing future predictions across 4 RCPs using Leaflet ##
+  
+  output$Future_Predictions_map <- renderLeaflet({
     
-    p1 <- Future_predictions %>% 
-                             filter(State == input$State,
-                             Timeframe == input$Timeframe) %>% 
-      ggplot(aes(fill=Predictions,
-                 text = str_c(County, " Avg Error: ", Average_Error))) +
-      geom_sf(colour = NA)  +
-      facet_wrap(~RCP) +
-      scale_fill_viridis("Yield predictions (LBs/Acre)",
-                         direction = -1) +
-      theme_void() 
+    # Filter the data based on the input selections and remove NA values
+    data <- Future_predictions %>% 
+      filter(State == input$State,
+             Timeframe == input$Timeframe,
+             RCP == input$RCP) %>%
+      na.omit()
     
-      ggplotly(p1)
+    # Create labels for the map
+    labels <- sprintf(
+      "<strong>%s</strong><br/>Predictions: %s<br/>Avg Error: %s",
+      data$County, data$Predictions, data$Average_Error
+    ) %>% lapply(htmltools::HTML)
+    
+    # Set bins for the legend
+    bins <- quantile(data$Predictions, probs = seq(0, 1, length.out = 6), na.rm = TRUE)
+    pal <- colorBin("YlOrRd", domain = data$Predictions, bins = bins)
+    
+    # Create the leaflet map
+    leaflet(data) %>%
+      addTiles() %>%
+      setView(lng = -96.5795, lat = 39.8283, zoom = 4) %>%
+      addPolygons(
+        fillColor = ~pal(Predictions),
+        weight = 2,
+        opacity = 1,
+        color = 'white',
+        dashArray = '3',
+        fillOpacity = 0.7,
+        label = labels,
+        highlightOptions = highlightOptions(
+          weight = 5,
+          color = '#666',
+          dashArray = '',
+          fillOpacity = 0.7,
+          bringToFront = TRUE
+        )
+      ) %>%
+      addLegend(
+        position = "bottomright",
+        pal = pal,
+        values = ~Predictions,
+        title = "Yield Predictions (LBs/Acre)",
+        labels = bins, # Set the labels for the legend using the bins
+        opacity = 1
+      )
                               
   })    
   
