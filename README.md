@@ -13,7 +13,9 @@ Sunscope is an innovative tool designed to forecast sunflower yield per acre in 
 
 ## Usage 🛠️
 
-To use Sunscope, follow these steps:
+The app is deployed here[https://sammajumder.shinyapps.io/SunScope/]
+
+To use Sunscope locally, follow these steps:
 
 1. Launch the application from your R environment.
 2. Select the desired emissions scenario and input parameters.
