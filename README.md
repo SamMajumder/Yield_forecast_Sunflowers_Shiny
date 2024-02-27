@@ -13,7 +13,8 @@ Sunscope is an innovative tool designed to forecast sunflower yield per acre in 
 
 ## Usage 🛠️
 
-The app is deployed [here] (https://sammajumder.shinyapps.io/SunScope/)
+The app is deployed [here](https://sammajumder.shinyapps.io/SunScope/)
+
 
 To use Sunscope locally, follow these steps:
 
